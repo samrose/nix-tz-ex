@@ -29,16 +29,6 @@
           end
         '';
         
-        runScript = pkgs.writeShellScriptBin "run-elixir-script" ''
-          # Set up local Mix and Hex
-          mkdir -p .nix-mix .nix-hex
-          export MIX_HOME=$PWD/.nix-mix
-          export HEX_HOME=$PWD/.nix-hex
-          export PATH=$MIX_HOME/bin:$HEX_HOME/bin:$PATH
-
-          ${elixir}/bin/elixir ${elixirScript} "$@"
-        '';
-
         setupScript = pkgs.writeShellScriptBin "elixir-setup" ''
           echo "Setting up Elixir environment..."
 
@@ -51,6 +41,21 @@
           ${elixir}/bin/mix local.hex --force
           ${elixir}/bin/mix local.rebar --force
           echo "Elixir setup complete. You can now run your application."
+        '';
+
+        runScript = pkgs.writeShellScriptBin "run-elixir-script" ''
+          # Check if .nix-mix and .nix-hex directories exist
+          if [ ! -d ".nix-mix" ] || [ ! -d ".nix-hex" ]; then
+            echo "Running initial setup..."
+            ${setupScript}/bin/elixir-setup
+          fi
+
+          # Set up environment variables
+          export MIX_HOME=$PWD/.nix-mix
+          export HEX_HOME=$PWD/.nix-hex
+          export PATH=$MIX_HOME/bin:$HEX_HOME/bin:$PATH
+
+          ${elixir}/bin/elixir ${elixirScript} "$@"
         '';
 
       in
